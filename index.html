@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>TruckStop</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="TruckStop UI.">
+    <link href="style.css" rel="stylesheet" type="text/css">
+    <!--<link rel="icon" type="image/x-icon" href="favicon.ico">-->
+</head>
+
+<body>
+    <div id="wrapper">
+        <h1>TruckStop</h1> <span id="version">0.1</span>
+        <button id="buttonH" class="control">Help (h)</button>
+        <button id="buttonS" class="control">Push Manifest (p)</button>
+        <button class="control" disabled="true">Login (User1)</button>
+        <div class="toptable metatable">
+            <div class="metacell"><label for="packtitle">Date:</label><input type="text" id="packtitle"></div>
+            <div class="metacell"><label for="packselect">Load manifest:</label><input type="file" id="packselect"
+                    accept=".manif"></div>
+        </div>
+
+        <div class="container">
+            <button id="reposhow" class="listButton"><svg width="8" height="16" viewBox="0 0 8 14">
+                    <path d="M8 4v1H0V4h8zM0 8h8V7H0v1zm0 3h8v-1H0v1z" /></svg> Active Pairs</button>
+            <div id="dataList" class="closed">
+                <table id="spooftable" style="width: 100%;">
+                    <tbody>
+                        <tr>
+                            <td id="driverlabel" colspan="2" style="font-size:1.2em;font-weight:bold;text-align:center;">Driver
+                                1</td>
+                        </tr>
+                        <tr>
+                            <td style="width:50%"><b>pID:</b> 00000001</td>
+                            <td style="width:50%"><b>tID:</b> 00000001</td>
+                        </tr>
+                        <tr>
+                            <td colspan="2"><b>Trailers:</b> 11111111, 11111112, 11111113</td>
+                        </tr>
+                        <tr>
+                            <td colspan="2">No schedule included.</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <span id="loading">loading...</span>
+                <table>
+                    <tbody id="repotable"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="questions"></div>
+        <button id="buttonQ">Add Truck (t)</button>
+    </div>
+    <script>
+        (function () {
+            document.addEventListener("keyup", function (e) { //when a key is released
+                e = e || window.event;
+                var target = e.target || e.srcElement;
+                if (!(/INPUT|TEXTAREA|SELECT|BUTTON/).test(target.nodeName)) { //if no input element is selected
+                    if (e.keyCode == 84) { //t
+                        anotherQ(); //add question
+                    }
+                    if (e.keyCode == 80) { //p
+                        save(); //save document
+                    }
+                    if (e.keyCode == 72) { //h
+                        help(); //open help
+                    }
+                }
+            }, false);
+            //button functions
+            var manifed = false;
+            document.getElementById("buttonH").addEventListener("click", function () { help(); }, false);
+            document.getElementById("buttonS").addEventListener("click", function () {
+                save();
+            }, false);
+            document.getElementById("buttonQ").addEventListener("click", function () { anotherQ(); }, false);
+            document.getElementById("packselect").addEventListener("change", function (e) { load(e); }, false);
+
+            var questions = document.getElementById("questions");
+            function anotherQ() { //adds a question
+                var current = document.createElement("div"); //current question
+                current.className = "box";
+                questions.appendChild(current);
+                var label = document.createElement("div"); //number
+                label.className = "qheader";
+                label.textContent = "Driver " + questions.children.length;
+                current.appendChild(label);
+                label = document.createElement("label"); //preamble label
+                label.textContent = "Phone ID:";
+                current.appendChild(label);
+                var elem = document.createElement("textarea"); //preamble
+                elem.type = "text";
+                label.appendChild(elem);
+                label = document.createElement("label"); //question label
+                label.textContent = "Truck ID:";
+                current.appendChild(label);
+                elem = document.createElement("textarea"); //question
+                elem.type = "text";
+                label.appendChild(elem);
+                elem = document.createElement("label"); //answers label
+                elem.textContent = "Trailer ID(s)";
+                current.appendChild(elem);
+                elem = document.createElement("div"); //answer container
+                elem.type = "text";
+                current.appendChild(elem);
+                anotherA(elem, false); //default first answer input
+                elem = document.createElement("button"); //answer button
+                elem.style = "margin-bottom:1em;";
+                elem.textContent = "Add Trailer";
+                elem.addEventListener("click", function () {
+                    anotherA(this.previousSibling, true);
+                }, false);
+                current.appendChild(elem);
+                controls(current);
+                elem = document.createElement("label"); //schedule label
+                elem.textContent = "Attach schedule:";
+                current.appendChild(elem);
+                elem = document.createElement("input"); //schedule upload
+                elem.type = "file";
+                elem.style = "margin-bottom:1em;";
+                current.appendChild(elem);
+            }
+            function anotherA(node, rm) { //adds another answer
+                var answer = document.createElement("input");
+                answer.type = "text";
+                answer.style = "margin-right:5px; margin-bottom:5px;";
+                if (rm == true) {
+                    answer.addEventListener("keydown", function (e) {
+                        if (this.value == "" && e.keyCode == 46) {
+                            this.previousSibling.focus(); //focus previous answer field
+                            this.remove(); //delete key removes empty added answer fields
+                        }
+                    }, false);
+                }
+                node.appendChild(answer);
+            }
+
+            function controls(node) { //adds control buttons
+                var elem = document.createElement("button"); //remove button
+                elem.className = "control";
+                elem.title = "Remove";
+                elem.textContent = "X";
+                elem.addEventListener("click", function () {
+                    var relabel = this.parentNode.nextSibling;
+                    this.parentNode.remove();
+                    while (relabel) {
+                        var str = relabel.children[0].textContent;
+                        relabel.children[0].textContent = str.match(/[a-z-]+\s/i) + (parseInt(str.match(/\d+/)) - 1); //reduces subsequent headers by 1
+                        relabel = relabel.nextSibling;
+                    }
+                }, false);
+                node.appendChild(elem);
+                elem = document.createElement("button"); //elevate button
+                elem.className = "control";
+                elem.title = "Swap above";
+                elem.textContent = "^";
+                elem.addEventListener("click", function () {
+                    this.parentNode.parentNode.insertBefore(this.parentNode, this.parentNode.previousSibling); //swaps entire node
+                    var str, relabel;
+                    if (this.parentNode.nextSibling) { //if there are still subsequent nodes
+                        str = this.parentNode.children[0].textContent;
+                        this.parentNode.children[0].textContent = str.match(/[a-z-]+\s/i) + (parseInt(str.match(/\d+/)) - 1);
+                        str = this.parentNode.nextSibling.children[0].textContent;
+                        this.parentNode.nextSibling.children[0].textContent = str.match(/[a-z-]+\s/i) + (parseInt(str.match(/\d+/)) + 1);
+                    }
+                    else { //if node is now the last
+                        relabel = this.parentNode.parentNode;
+                        for (var i = 0; i < relabel.children.length; i++) {
+                            str = relabel.children[i].children[0].textContent;
+                            relabel.children[i].children[0].textContent = str.match(/[a-z-]+\s/i) + (i + 1); //update every header
+                        }
+                    }
+                    this.parentNode.scrollIntoView({ block: "nearest", behavior: "smooth" });
+                }, false);
+                node.appendChild(elem);
+            }
+
+            function save() { //parses and names pack for downloading
+                var pack = {};
+                pack.version = document.getElementById("version").textContent;
+                pack.title = document.getElementById("packtitle").value;
+                if (pack.title == "") {
+                    pack.title = "untitled"; //default file name
+                }
+                pack.questions = []; //array for questions
+                for (var i = 0; i < questions.children.length; i++) {
+                    pack.questions[i] = questions.children[i];
+                    pack.questions[i].preamble = questions.children[i].children[1].children[0].value;
+                    pack.questions[i].question = questions.children[i].children[2].children[0].value;
+                    pack.questions[i].answer = []; //nested arrays for answers
+                    for (var j = 0; j < questions.children[i].children[4].children.length; j++) {
+                        pack.questions[i].answer[j] = questions.children[i].children[4].children[j].value;
+                    }
+                }
+                download(JSON.stringify(pack), pack.title + ".manif"); //formats pack
+            }
+
+            var savelink = null; //null by default
+            function download(text, filename) { //encodes and saves file
+                if (savelink) {
+                    URL.revokeObjectURL(savelink); //releases blob (not done immediately so link has enough time)
+                }
+                var blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+                savelink = URL.createObjectURL(blob);
+                var a = document.createElement("a");
+                a.setAttribute("href", savelink);
+                a.setAttribute("download", filename);
+                document.body.appendChild(a); //must append or certain browsers will not click()
+                a.click(); //activates download
+                a.remove();
+            }
+
+            function load(event) { //select and load file
+                var reader = new FileReader();
+                reader.onload = function () {
+                    try {
+                        var loaded = JSON.parse(reader.result);
+                        if (loaded && typeof loaded === "object") {
+                            overwrite(loaded);
+                        }
+                    }
+                    catch (e) {
+                        alert("Failed to load file.");
+                    }
+                };
+                reader.readAsText(event.target.files[0]);
+                document.getElementById("packselect").value = ""; //clears loaded file so it can be selected again
+            }
+
+            function overwrite(pack) { //unloads current pack and loads pack file content
+                if (pack.version == "0.1") {
+                    while (questions.firstChild) {
+                        questions.removeChild(questions.firstChild); //clears questions
+                    }
+                    document.getElementById("packtitle").value = pack.title;
+                    for (var i = 0; i < pack.questions.length; i++) {
+                        anotherQ();
+                        questions.children[i].children[1].children[0].value = pack.questions[i].preamble;
+                        questions.children[i].children[2].children[0].value = pack.questions[i].question;
+                        for (var j = 0; j < pack.questions[i].answer.length; j++) {
+                            if (j > 0) {
+                                anotherA(questions.children[i].children[4], true); //answers after the first
+                            }
+                            questions.children[i].children[4].children[j].value = pack.questions[i].answer[j];
+                        }
+                    }
+                }
+                else {
+                    alert("Unknown pack version.");
+                }
+            }
+
+            function help() {
+                alert("TruckStop 0.1\n\n- Assign drivers a truck and a phone. Assign trucks trailers and a schedule. Press P to push the manifest for monitoring.\n\n\nTested with browsers: Chrome 70, Edge 42, Safari 12, Firefox 64.");
+            }
+
+
+
+
+
+
+
+            var initial = false;
+            document.getElementById("reposhow").addEventListener("click", function () {
+                if (initial == false) {
+                    getData();
+                }
+                if (manifed == true) {
+                    document.getElementById("loading").textContent = "";
+                }
+                initial = true;
+                toggle("dataList");
+            }, false);
+
+            function toggle(id) { //toggles given element opened or closed
+                var target = document.getElementById(id);
+                if (target.className == "closed") {
+                    target.className = "opened";
+                }
+                else {
+                    target.className = "closed";
+                }
+            }
+
+            function addIcon(type) { //creates svg element of given type
+                var ns = "http://www.w3.org/2000/svg";
+                var svg = document.createElementNS(ns, "svg");
+                svg.setAttribute("width", "1em");
+                svg.setAttribute("height", "1em");
+                svg.setAttribute("viewBox", "0 0 12 16");
+                var path = document.createElementNS(ns, "path");
+                if (type == "repo") {
+                    path.setAttribute("d", "M4 9H3V8h1v1zm0-3H3v1h1V6zm0-2H3v1h1V4zm0-2H3v1h1V2zm8-1v12c0 .55-.45 1-1 1H6v2l-1.5-1.5L3 16v-2H1c-.55 0-1-.45-1-1V1c0-.55.45-1 1-1h10c.55 0 1 .45 1 1zm-1 10H1v2h2v-1h3v1h5v-2zm0-10H2v9h9V1z");
+                }
+                else if (type == "link") {
+                    path.setAttribute("d", "M11 10h1v3c0 .55-.45 1-1 1H1c-.55 0-1-.45-1-1V3c0-.55.45-1 1-1h3v1H1v10h10v-3zM6 2l2.25 2.25L5 7.5 6.5 9l3.25-3.25L12 8V2H6z");
+                }
+                svg.appendChild(path);
+                return svg;
+            }
+
+            var telemetry = {};
+            telemetry.moved = false;
+            function getData() { //gets truck and phone data from source
+                var path = "http://localhost/earlyWarning.json";
+                var repos = new XMLHttpRequest();
+                repos.onreadystatechange = function () { //callback
+                    if (repos.readyState === XMLHttpRequest.DONE) {
+                        if (repos.status === 200) { //if successful
+                            manifed = true;
+                            telemetry = JSON.parse(repos.responseText); //object with public repository information
+                            console.log(telemetry.moved);
+                            if (telemetry.moved == "true") {
+                                var nodus = document.getElementById("driverlabel");
+                                nodus.style.backgroundColor = "red";
+                                console.log("TRUCK IS MOVING WITHOUT AUTHORIZED DRIVER!!!!");
+                            }
+                            document.getElementById("loading").textContent = "";
+                        }
+                        else { //if unsuccessful
+                                var retry = document.createElement("button"); //retry load button
+                                retry.textContent = "Load failed. Try again?";
+                                retry.addEventListener("click", function () {
+                                    getData();
+                                    document.getElementById("loading").textContent = "loading...";
+                                    this.remove();
+                                }, false);
+                                document.getElementById("loading").textContent = "";
+                                document.getElementById("dataList").appendChild(retry);
+                        }
+                    }
+                };
+                repos.open("GET", path, true);
+                repos.send();
+					}
+
+
+		setInterval(function(){
+					getData();
+          console.log("checked!");
+		}, 1000);
+        }());
+    </script>
+</body>
+
+</html>
