@@ -20,17 +20,17 @@ For any time a driver is set out on a delivery we only have 4 cases:
 * Phone is Stationary || Cargo is Stationary *OKAY*
 * Phone is Stationary || Cargo is Moving (Speed of truck is much faster than phone) *SEND ALERT*
 
-If any time the truck is stored in storage and is found to be moving then an alert is sent automatically
+If any time the truck is stored in storage and is found to be moving then an alert is sent automatically.
 
 ## Why This is Better?
 
 The GPS data of the phone and trucks are always being tracked anyway so in no way is this solution invasive.
 
 * The solution is better as it makes sure it does not affect the lives of any drivers as this solution is all controlled from the backend.
-* This provides additional security against comprimised drivers
-* Completely **Free**: All the data and trackers already exists so the solution is all sofware based
-* Makes sure to contine tracking the truck and cargo in the event of a GPS jammer using the accelerometer and gyroscope
-* Simple: The problem was noted to cost 4 Billion Dollars, so this solution targets the core issues present when cargo gets hijacked to better provide an early warning
+* This provides additional security against comprimised drivers.
+* Completely **Free**: All the data and trackers already exists so the solution is all sofware based.
+* Makes sure to contine tracking the truck and cargo in the event of a GPS jammer using the accelerometer and gyroscope.
+* **Simple** The problem was noted to cost 4 Billion Dollars so this solution targets the core issues present when cargo gets hijacked to provide a better early warning system.
 
 ## Demo
 
