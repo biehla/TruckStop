@@ -35,8 +35,6 @@ The idea is that the laptop where the code is being run on is the phone of the d
 Additionally we have tracked the data point and plotted them using python's matlibplot library to visualize where all the data is located on a map.
 
 ![Plotted Coordinates](PlottedData.png)
-Format: ![Alt Text](url)
-
 
 One can go through the raw data in the data set zip or the formatted data in Data_From_Cargo.csv.
 
